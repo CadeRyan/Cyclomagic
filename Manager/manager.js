@@ -34,3 +34,38 @@ for (var i = 0; i < 5; i++){
     workers.push(details);
     workerPortNumber++;
 }
+
+manager.post('/repoURL', (request, res) => {
+    console.log('Cloning repositry...');
+    var repoURL = request.body.Repo;
+    var repo = git.Clone(repoUrl, path.join(__dirname, './repo-folder')).catch((error) => {
+        console.log('Repositry does not exist');
+        console.log(error.message);
+    }).then((repo) => {
+
+        reposToFileArray(path.join(__dirname, './repo-folder'), /\.js$/);
+        console.log("Cloning complete.");
+
+        for (var i = 0; i < workers.length; i++) {
+            request = http.request(workers[i]);
+            request.write(JSON.stringify({ "String": "" }));
+            request.end();
+            workers[i].path = '/work';
+        }
+    });
+
+    reposToFileArray = (repoPath, fileType) => {
+        var files = fs.readdirSync(repoPath);
+        for (var i = 0; i < files.length; i++) {
+            var file = path.join(repoPath, files[i]);
+
+            if (fs.lstatSync(file).isDirectory()) {
+                reposToFileArray(file, fileType);
+            }
+            else if (fileType.test(file)) {
+                repoFiles.push(file);
+            }
+        }
+
+    };
+});
